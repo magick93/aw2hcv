@@ -1,0 +1,31 @@
+
+
+
+  - name: "[Debug] Loop over imported variables for {{ write_data_key }}"
+    debug:
+        msg: "write_path={{ write_path  }}. write_data_key={{ write_data_key }} write_data={{ write_data }}"
+    # with_dict: "{{ hv }}"
+    # when: item.key == write_data_key
+
+  - name: "[Debug] vault url: {{ url }}"
+    debug:
+        msg: "Using vault url: {{ url }}"
+
+  - name: "Write {{ write_data_key }} secret to Vault using key value V2 engine"
+    community.hashi_vault.vault_kv2_write:
+      # path: "{{ admin_path}}" #FAILED! => {"changed": false, "msg": "The path 'spesi_kv/admin/' doesn't seem to exist."
+      # path: "/v1/spesi_kv/data/admin" #FAILED! => {"changed": false, "msg": "Forbidden: Permission Denied to path '/v1/spesi_kv/data/admin'."}
+      # path: "/v1/spesi_kv/admin" #FAILED! => {"changed": false, "msg": "Forbidden: Permission Denied to path '/v1/spesi_kv/admin'."}
+      path: "{{write_path}}"
+      url: "{{ url }}"
+      engine_mount_point: "{{ engine_prefix }}"
+      validate_certs: "{{ use_certs }}"
+      data: "{{item.value}}"
+    register: results
+    with_dict: "{{ hv }}"
+    when: item.key == write_data_key
+    ignore_errors: true
+
+  # - name: Debug Write Results
+  #   debug:
+  #     var: results

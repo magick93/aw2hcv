@@ -1,0 +1,14 @@
+# Variables for Hashicorp Vault
+engine_prefix: spesi_kv
+vault_paths:
+      - name: dev
+        description: "Developer secrets"
+        write_path: "dev/"
+        path: "spesi_kv/dev"
+      - name: admin
+        description: "Administrative secrets"
+        write_path: "admin/" 
+        path: "spesi_kv/admin"
+
+validate_certs: false
+vault_url: "https://127.0.0.1:8200"

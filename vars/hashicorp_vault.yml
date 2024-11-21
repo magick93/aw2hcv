@@ -1,0 +1,12 @@
+dev:
+  test: "hello world value one"
+  abc: "hello world value two"
+  exe: "hello world value three"
+  xyc: "hello world value four"
+
+
+admin:
+  encrypted_vc_secrets_vaulted_passphrase: "hello encrypted_vc_secrets_vaulted_passphrase value"
+  lido_ejector_password:
+    mainnet: "hello lido_ejector_password value"
+
