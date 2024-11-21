@@ -10,7 +10,9 @@
 
   tasks:
 
-
+      # Create the engine that will store the secrets. 
+      # We use the cli here because the community.hashi_vault.vault_write module does not support the creation of a new engine
+      # And we attempt to make it idempotent by checking if the path is already in use
     - name: Enable KV v2 secrets engine at path "{{ engine_prefix }}"
       command: >
         vault secrets enable -tls-skip-verify -path={{ engine_prefix }} -version=2 kv
@@ -21,16 +23,7 @@
       changed_when: '"successfully enabled" in vault_enable_result.stdout'
 
       
-    # Error was a <class 'ansible.errors.AnsibleError'>, original message: The path 'spesi_kv/admin/ ' doesn't seem to exist.. The path 'spesi_kv/admin/ ' doesn't seem to exist."
-    # - name: List all secrets at a path
-    #   ansible.builtin.debug:
-    #     msg: "{{ lookup('community.hashi_vault.vault_list', 'spesi_kv/admin/ ', url=vault_url, validate_certs=false) }}"
-
-    # Debug the vault_paths structure
-    - name: Debug vault_paths
-      debug:
-        var: vault_paths
-      when: false
+   
 
     # Debug the imported variables
     - name: Import variables from file
@@ -38,9 +31,7 @@
         file: ../vars/hashicorp_vault.yml
         name: hv
 
-    - name: Debug imported variables
-      debug:
-        var: hv
+
 
     # Debug the item.key values
     - name: Debug loop values
@@ -75,31 +66,8 @@
       with_dict: "{{ hv }}"
       when: item.key in vault_paths | map(attribute='name') | list
 
-    - name: List kv2 secrets from Vault
-      community.hashi_vault.vault_list:
-        url: "{{ vault_url }}"
-        validate_certs: "{{ validate_certs }}"
-        # path: secrets/metadata # FAILED! => {"changed": false, "msg": "The path 'secrets/metadata' doesn't seem to exist."}
-        # path: cubbyhole # FAILED! => {"changed": false, "msg": "The path 'cubbyhole/metadata' doesn't seem to exist."}
-        # path: kv # FAILED! => {"changed": false, "msg": "The path 'kv' doesn't seem to exist."}
-        #path: "spesi_kv/dev/data/" # FAILED! => {"changed": false, "msg": "The path 'spesi_kv/dev/data/' doesn't seem to exist."}
-        path: "{{ item.key }}"
-        mount_point: "{{ (vault_paths | selectattr('name', 'equalto', item.key) | first).write_path }}" 
-        # For kv2, the path needs to follow the pattern 'mount_point/metadata' or 'mount_point/metadata/path' to list all secrets in that path
-        # auth_method: userpass
-        # username: user
-        # password: '{{ passwd }}'
-      register: secret
-      ignore_errors: true
-      with_dict: "{{ hv }}"
-      when: item.key in vault_paths | map(attribute='name') | list
-      
+   
 
-    - name: Display the secrets found at the path provided above
-      ansible.builtin.debug:
-        msg: "{{ secret.data.data['keys'] }}"
-        # Note that secret.data.data.keys won't work as 'keys' is a built-in method in Python
-      ignore_errors: true
 
     - name: loop over all files
       include_tasks: ../tasks/hashicorp_vault_write.yml
@@ -114,119 +82,3 @@
       loop_control:
         loop_var: hv_item
 
-
-
-      # with_items: "{{ vault_paths }}"
-
-    # - name: Loop over imported variables
-    #   debug:
-    #     msg: "Variable name={{ item.key }} Value={{ item.value }}"
-    #   with_dict: "{{ hv }}"
-    #   when: item.key in vault_paths | map(attribute='name') | list
-
-    
-
-
-    # - name: Validate Vault Connection
-    #   community.hashi_vault.vault_read:
-    #     path: cubbyhole/
-    #     token: "{{ lookup('env', 'VAULT_TOKEN') }}"
-    #     url: "{{ vault_url }}"
-    #     # validate_certs: "{{ validate_certs }}"    
-    #   register: vault_health
-    #   when: false
-
-    # - name: Debug Vault Health
-    #   debug:
-    #     var: vault_health
-    #   # failed_when: vault_health.initialized == false
-
-    # - name: Check token capabilities
-    #   register: token_caps
-    #   community.hashi_vault.vault_write:
-    #     url: "{{ vault_url }}"
-    #     path: sys/capabilities-self
-    #     data:
-    #       paths: 
-    #         - "{{ admin_path}}"
-
-
-
-    # - name: Show capabilities
-    #   ansible.builtin.debug:
-    #     var: token_caps
-
-    # - ansible.builtin.assert:
-    #     that:
-    #       - '"create" in token_caps.data.data["{{admin_path}}"]'
-    #       - '"update" in token_caps.data.data["{{admin_path}}"]'
-
-    # - name: Write secret to Vault using key value V2 engine
-    #   community.hashi_vault.vault_write:
-    #     # path: "{{ admin_path}}" #FAILED! => {"changed": false, "msg": "The path 'spesi_kv/admin/' doesn't seem to exist."
-    #     # path: "/v1/spesi_kv/data/admin" #FAILED! => {"changed": false, "msg": "Forbidden: Permission Denied to path '/v1/spesi_kv/data/admin'."}
-    #     # path: "/v1/spesi_kv/admin" #FAILED! => {"changed": false, "msg": "Forbidden: Permission Denied to path '/v1/spesi_kv/admin'."}
-    #     path: spesi_kv/data/admin
-    #     data:
-    #       data:
-    #         testkey1: val1666
-    #         testkey2: val2777
-
-    # - name: Read version 5 of a secret from kv2 with a different mount via the remote host
-    #   community.hashi_vault.vault_kv2_get:
-    #     url: "{{ vault_url }}"
-    #     engine_mount_point: spesi_kv
-    #     path: admin
-    #     # version: 1
-    #   register: response
-
-    # - name: Display the result of the write (this can be empty)
-    #   ansible.builtin.debug:
-    #     msg: "{{ response.data }}"
-
-
-    # - name: Write a secret 
-    #   vars:
-    #     path: "{{admin_path}}"
-    #     cap_data:
-    #       paths:
-    #         - '{{ admin_path }}'
-    #     caps: "{{ lookup('community.hashi_vault.vault_write', 'sys/capabilities-self', data=cap_data).data[admin_path] }}"
-    #   when:
-    #     - "'create' in caps"
-    #     - "'update' in caps"
-    #   # name: Write a secret to HashiCorp Vault
-    #   community.hashi_vault.vault_write:
-    #     path: '{{ admin_write_path }}'
-    #     validate_certs: "{{ validate_certs }}"
-    #     token: "{{ lookup('env', 'VAULT_TOKEN') }}"
-    #     data:
-    #       data:
-    #         key1: one
-    #         key2: two
-
-  
-
-
-#  fails due to "route entry not found" error / does not automatically create the route/path
-    # - name: Add a secret to HashiCorp Vault
-    #   community.hashi_vault.vault_kv2_write:
-    #     path: spesi_kv/dev/my_secret
-    #     token: "{{ lookup('env', 'VAULT_TOKEN') }}"
-    #     url: "{{ vault_url }}"
-    #     data:
-    #       key1: "value1"
-    #       key2: "value2"
-
-    # - name: Interactive Vault Secret Role Creation
-    #   block:
-    #     - name: Iterate Through Vault Paths
-    #       include_tasks: ../tasks/create_vault_secret_role.yml
-    #       loop: "{{ vault_paths }}"
-    #       loop_control:
-    #         loop_var: current_path
-
-  # post_tasks:
-  #   - name: Migration Complete
-  #     debug:
-  #       msg: "Vault secret roles have been created successfully"
