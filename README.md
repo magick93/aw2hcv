@@ -25,7 +25,7 @@ sudo apt update && sudo apt install vault
 
 1. Start the local ansible with `docker compose up -d`
 1. Unseal the local vault with `ansible-playbook hcv_init_unseal.yml` in the `plays` directory. Take note of the `Display vault root token`. Copy the `export VAULT_TOKEN=xxxxxxxxxxxxxxxxxx` and run this in the terminal you will use to run the following commands. 
-1. `ansible-playbook migrate_env_to_hashicorp_vault.yml` will read example variables from `vars/hashicorp_vault.yml` and store them in Hashicorp Vault. 
+1. `ansible-playbook migrate_env_to_hashicorp_vault.yml --vault-id @prompt` will read example variables from `vars/hashicorp_vault.yml` and store them in Hashicorp Vault. This will prompt for the _Ansible_ vault password.
 
 ## Utilities
 
