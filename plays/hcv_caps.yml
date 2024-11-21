@@ -1,0 +1,44 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+
+
+
+  vars:
+    vault_paths:
+      - name: dev
+        description: "Developer secrets"
+        write_path: spesi_kv/dev/data
+        path: spesi_kv/dev
+      - name: admin
+        description: "Administrative secrets"
+        write_path: spesi_kv/admin/ 
+        path: spesi_kv/admin
+    validate_certs: false
+    vault_url: "https://127.0.0.1:8200"
+    admin_path: "path_does_not_exist"    
+  tasks:
+
+    - name: Check token capabilities
+      register: token_caps
+      community.hashi_vault.vault_write:
+        url: "{{ vault_url }}"
+        path: sys/capabilities-self
+        validate_certs: "{{ validate_certs }}"
+        data:
+          paths: 
+            - "{{ admin_path}}"
+
+
+
+
+
+    - name: Show capabilities
+      ansible.builtin.debug:
+        var: token_caps
+
+    - ansible.builtin.assert:
+        that:
+          - '"create" in token_caps.data.data["{{admin_path}}"]'
+          - '"update" in token_caps.data.data["{{admin_path}}"]'
