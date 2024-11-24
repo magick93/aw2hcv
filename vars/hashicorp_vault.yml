@@ -7,8 +7,7 @@ dev:
 
 admin:
   encrypted_vc_secrets_vaulted_passphrase: "hello encrypted_vc_secrets_vaulted_passphrase value"
-  lido_ejector_password:
-    mainnet: "hello lido_ejector_password value"
+  lido_ejector_password_mainnet: "hello lido_ejector_password value"
   my_secret: !vault |
           $ANSIBLE_VAULT;1.1;AES256
           32396533393333353365363839643632666564393164333466636334623837653831616630636366
