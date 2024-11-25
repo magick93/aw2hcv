@@ -5,6 +5,8 @@ Ansible write to Hashicorp Vault
 
 ## Installation
 
+### Setup local HCV Using Docker
+
 1. Install Ansible and Docker
 1. `pip install -r requirements.txt`
 1. `ansible-galaxy install -r requirements.yml`
@@ -25,6 +27,11 @@ sudo apt update && sudo apt install vault
 
 1. Start the local ansible with `docker compose up -d`
 1. Unseal the local vault with `ansible-playbook hcv_init_unseal.yml` in the `plays` directory. Take note of the `Display vault root token`. Copy the `export VAULT_TOKEN=xxxxxxxxxxxxxxxxxx` and run this in the terminal you will use to run the following commands. 
+
+## Write secrets to Hashicorp Vault
+
+If you are _NOT_ running the Hashicorp Vault from the `docker-compose.yml` file, then set url to your vault at `vars/hcv.yml`.
+
 1. `ansible-playbook migrate_env_to_hashicorp_vault.yml --vault-id @prompt` will read example variables from `vars/hashicorp_vault.yml` and store them in Hashicorp Vault. This will prompt for the _Ansible_ vault password.
 
 ## Utilities
